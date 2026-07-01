@@ -5,7 +5,7 @@
   "bin": { "coolify": "dist/bin.js" },
   "scripts": {
     "dev": "tsx src/bin.ts",
-    "build": "tsup src/bin.ts --format esm --clean --dts=false",
+    "build": "tsup src/bin.ts --format esm --clean --no-dts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
