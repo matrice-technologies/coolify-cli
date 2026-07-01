@@ -35,12 +35,12 @@ describe("watchDeployment", () => {
     expect(result).toBe("failed");
   });
 
-  it("resolves failed when maxPolls is exhausted without a terminal status", async () => {
+  it("resolves timeout when maxPolls is exhausted without a terminal status", async () => {
     const spy = vi
       .spyOn(resources, "getDeployment")
       .mockResolvedValue({ status: "in_progress" });
     const result = await watchDeployment({} as any, "d1", { intervalMs: 0, maxPolls: 3 });
-    expect(result).toBe("failed");
+    expect(result).toBe("timeout");
     expect(spy).toHaveBeenCalledTimes(3);
   });
 });

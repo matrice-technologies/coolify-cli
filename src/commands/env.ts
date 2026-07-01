@@ -1,14 +1,9 @@
 import { Command } from "commander";
-import { ApiClient } from "../api/client.ts";
-import { resolveCredentials } from "../config.ts";
 import { listEnvs, setEnvsBulk, deleteEnv, deploy } from "../api/resources.ts";
 import { resolveUuid } from "../util/resolve.ts";
 import { printResult } from "../util/output.ts";
-import { watchDeployment } from "./deploy.ts";
-
-function clientFor(profile?: string): ApiClient {
-  return new ApiClient(resolveCredentials({ profile }));
-}
+import { clientFor } from "../util/client.ts";
+import { watchDeployment, reportDeployOutcome } from "./deploy.ts";
 
 export function envCommand(): Command {
   const cmd = new Command("env").description("Manage application environment variables");
@@ -40,7 +35,12 @@ export function envCommand(): Command {
       if (o.redeploy) {
         const res = await deploy(client, uuid);
         const dep = res.deployments[0]?.deployment_uuid;
-        if (dep) await watchDeployment(client, dep, { onStatus: (s) => console.log(`  ${s}`) });
+        if (dep) {
+          const outcome = await watchDeployment(client, dep, {
+            onStatus: (s) => console.log(`  ${s}`),
+          });
+          reportDeployOutcome(outcome, app);
+        }
       }
     });
 

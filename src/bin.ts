@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { ApiClient } from "./api/client.ts";
-import { resolveCredentials } from "./config.ts";
 import { deploy } from "./api/resources.ts";
 import { resolveUuid } from "./util/resolve.ts";
-import { watchDeployment } from "./commands/deploy.ts";
+import { clientFor } from "./util/client.ts";
+import { watchDeployment, reportDeployOutcome } from "./commands/deploy.ts";
 import { configCommand } from "./commands/config.ts";
 import { lsCommand, inspectCommand } from "./commands/list.ts";
 import { envCommand } from "./commands/env.ts";
@@ -24,19 +23,14 @@ export function buildProgram(): Command {
     .option("--force", "force rebuild", false)
     .option("--no-watch", "do not wait for completion")
     .action(async (target: string, o) => {
-      const client = new ApiClient(resolveCredentials({ profile: o.profile }));
+      const client = clientFor(o.profile);
       const uuid = await resolveUuid(client, "applications", target);
       const res = await deploy(client, uuid, { force: o.force });
       const dep = res.deployments[0]?.deployment_uuid;
       console.log(`Triggered deploy ${dep ?? "(unknown)"}.`);
       if (o.watch && dep) {
         const result = await watchDeployment(client, dep, { onStatus: (s) => console.log(`  ${s}`) });
-        if (result === "failed") {
-          console.error("Deploy failed.");
-          process.exitCode = 1;
-        } else {
-          console.log("Deploy finished.");
-        }
+        reportDeployOutcome(result, target, "Deploy still running after polling");
       }
     });
 
