@@ -22,4 +22,25 @@ describe("watchDeployment", () => {
     const result = await watchDeployment({} as any, "d1", { intervalMs: 0 });
     expect(result).toBe("failed");
   });
+
+  it("resolves failed on error status value", async () => {
+    vi.spyOn(resources, "getDeployment").mockResolvedValue({ status: "error" });
+    const result = await watchDeployment({} as any, "d1", { intervalMs: 0 });
+    expect(result).toBe("failed");
+  });
+
+  it("resolves failed on cancelled status", async () => {
+    vi.spyOn(resources, "getDeployment").mockResolvedValue({ status: "cancelled" });
+    const result = await watchDeployment({} as any, "d1", { intervalMs: 0 });
+    expect(result).toBe("failed");
+  });
+
+  it("resolves failed when maxPolls is exhausted without a terminal status", async () => {
+    const spy = vi
+      .spyOn(resources, "getDeployment")
+      .mockResolvedValue({ status: "in_progress" });
+    const result = await watchDeployment({} as any, "d1", { intervalMs: 0, maxPolls: 3 });
+    expect(result).toBe("failed");
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
 });
