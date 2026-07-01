@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { resolveCredentials, ConfigError } from "../src/config.ts";
+import { mkdtempSync, statSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { resolveCredentials, ConfigError, saveProfile, loadConfig } from "../src/config.ts";
 
 describe("resolveCredentials", () => {
   it("prefers env vars", () => {
@@ -29,5 +32,23 @@ describe("resolveCredentials", () => {
 
   it("throws ConfigError when nothing resolves", () => {
     expect(() => resolveCredentials({ env: {}, config: { profiles: {} } })).toThrow(ConfigError);
+  });
+});
+
+describe("saveProfile / loadConfig round-trip", () => {
+  it("writes config.json with mode 0600 and reads back the profile", () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "coolify-"));
+    try {
+      saveProfile("prod", { url: "https://x.com", token: "t" }, { dir: tmpDir });
+
+      const mode = statSync(join(tmpDir, "config.json")).mode & 0o777;
+      expect(mode).toBe(0o600);
+
+      const config = loadConfig(tmpDir);
+      expect(config.profiles.prod).toEqual({ url: "https://x.com", token: "t" });
+      expect(config.defaultProfile).toBe("prod");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
