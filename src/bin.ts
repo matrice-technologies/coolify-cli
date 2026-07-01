@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { deploy } from "./api/resources.ts";
 import { resolveUuid } from "./util/resolve.ts";
@@ -46,7 +48,25 @@ async function main() {
   }
 }
 
+/**
+ * True when this module is the process entry point (run directly), false when
+ * imported (e.g. by tests). Resolves symlinks so it works when invoked via a
+ * globally linked bin (`npm link` → /usr/local/bin/coolify → real dist path)
+ * and handles paths with spaces / Windows via pathToFileURL.
+ */
+export function isMainModule(
+  metaUrl: string = import.meta.url,
+  argv1: string | undefined = process.argv[1],
+): boolean {
+  if (!argv1) return false;
+  try {
+    return metaUrl === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
 // Run only when invoked directly, not when imported by tests.
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule()) {
   void main();
 }
