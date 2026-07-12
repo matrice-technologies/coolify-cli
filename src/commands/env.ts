@@ -50,8 +50,8 @@ export function envCommand(): Command {
     .action(async (app: string, key: string, o) => {
       const client = clientFor(o.profile);
       const uuid = await resolveUuid(client, "applications", app);
-      await deleteEnv(client, uuid, key);
-      console.log(`Removed ${key}.`);
+      const removed = await deleteEnv(client, uuid, key);
+      console.log(removed > 1 ? `Removed ${key} (${removed} occurrences).` : `Removed ${key}.`);
     });
 
   return cmd;

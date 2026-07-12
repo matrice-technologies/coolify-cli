@@ -43,8 +43,27 @@ export async function setEnvSingle(
   await client.request("PATCH", `/applications/${uuid}/envs`, { key, value });
 }
 
-export async function deleteEnv(client: ApiClient, uuid: string, key: string): Promise<void> {
-  await client.request("DELETE", `/applications/${uuid}/envs/${encodeURIComponent(key)}`);
+/**
+ * Delete the environment variable(s) named `key` from an application.
+ *
+ * The Coolify v4 API matches env vars by their own uuid, not by key name, so we
+ * resolve the key to its uuid(s) via listEnvs first and DELETE each by uuid.
+ * A key can map to more than one entry (e.g. a production copy with
+ * is_preview:false and a preview copy with is_preview:true, each with a distinct
+ * uuid); every match is deleted. Returns the number of entries removed.
+ */
+export async function deleteEnv(client: ApiClient, uuid: string, key: string): Promise<number> {
+  const matches = (await listEnvs(client, uuid)).filter((e) => e.key === key);
+  if (matches.length === 0) {
+    throw new Error(`Environment variable "${key}" not found.`);
+  }
+  if (matches.some((e) => !e.uuid)) {
+    throw new Error(`Cannot delete "${key}": Coolify returned an entry without a uuid.`);
+  }
+  for (const env of matches) {
+    await client.request("DELETE", `/applications/${uuid}/envs/${env.uuid}`);
+  }
+  return matches.length;
 }
 
 export function deploy(
