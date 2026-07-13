@@ -1,15 +1,19 @@
 {
   "name": "coolify-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
-  "bin": { "coolify": "dist/bin.js" },
+  "bin": {
+    "coolify": "dist/bin.js"
+  },
   "scripts": {
     "dev": "tsx src/bin.ts",
     "build": "tsup src/bin.ts --format esm --clean --no-dts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": { "commander": "^12.1.0" },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
   "devDependencies": {
     "tsx": "^4.19.0",
     "tsup": "^8.3.0",
